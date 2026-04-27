@@ -4,20 +4,21 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
-    await app.listen(process.env.PORT ?? 3000);
-
+    
+    app.setGlobalPrefix('api/digemid');
+    
     app.enableCors({
         origin: process.env.CORS_ORIGIN || '*',
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         credentials: true,
     });
-
+    
     app.useGlobalPipes(
         new ValidationPipe({
             //* Evitamos campos que no necesitamos en cada peticion
             whitelist: true,
             forbidNonWhitelisted: true,
-
+            
             transform: true,
             transformOptions: {
                 //* Evitamos que nuestros campos tomen valores undefined si no los pasamos en dtos
@@ -27,6 +28,7 @@ async function bootstrap() {
             },
         })
     )
-
+    
+    await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
