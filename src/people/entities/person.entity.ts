@@ -1,5 +1,5 @@
 import { User } from "src/users/entities/user.entity";
-import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, Entity, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, Entity, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn, DeleteDateColumn } from "typeorm";
 
 export enum DocumentType {
     DNI = 'DNI',
@@ -52,6 +52,9 @@ export class Person {
 
     @UpdateDateColumn({name: 'updated_at'})
     updatedAt: Date;
+
+    @DeleteDateColumn({name: 'deleted_at'})
+    deletedAt: Date;
 
     @BeforeInsert()
     @BeforeUpdate()

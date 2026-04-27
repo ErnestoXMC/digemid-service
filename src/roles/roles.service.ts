@@ -25,7 +25,7 @@ export class RolesService {
             return toDto(RoleResponseDto, roleSaved);
 
         } catch (error: any) {
-            if (error.code === '23505')
+            if (error.code === 'ER_DUP_ENTRY')
                 throw new BadRequestException('El código de rol ya ha sido registrado previamente.');
 
             this.logger.error(error);
@@ -79,7 +79,7 @@ export class RolesService {
         }
     }
 
-    //? Mejorar el codigo, implementar validacion, no cambiar el estado a inactivo si tiene un usuario activo relacionado
+    //TODO Mejorar el codigo, implementar validacion, no cambiar el estado a inactivo si tiene un usuario activo relacionado
     async updateStatus(id: number, status: boolean): Promise<RoleUpdateStatusResponseDto> {
 
         try {

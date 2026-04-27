@@ -78,7 +78,7 @@ export class UsersService {
             if (error instanceof NotFoundException) throw error;
 
             //* Excepcion en caso existan campos unicos duplicados en nuestra bd
-            if (error.code = "23505")
+            if (error.code = "ER_DUP_ENTRY")
                 throw new BadRequestException("El numero de documento o email personal/corporativo ya ha sido registrado previamente.");
 
             this.logger.error(error);
@@ -145,7 +145,7 @@ export class UsersService {
         } catch (error: any) {
             if (error instanceof NotFoundException) throw error;
 
-            if (error.code === "23505")
+            if (error.code === "ER_DUP_ENTRY")
                 throw new BadRequestException("El correo corporativo ya ha sido registrado previamente.")
 
             this.logger.error(error);
@@ -204,7 +204,7 @@ export class UsersService {
         try {
             const user = await this.userRepository.findOneBy({ id });
 
-            if (!user) throw new NotFoundException('No se encontró el usuario.');
+            if (!user) throw new NotFoundException('Usuario no encontrado o se encuentra inactivo.');
 
             await this.userRepository.softRemove(user);
 
