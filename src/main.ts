@@ -15,21 +15,27 @@ function flattenValidationErrors(errors: ValidationError[]): string[] {
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
-    
+
     app.setGlobalPrefix('api/digemid');
-    
+
     app.enableCors({
         origin: process.env.CORS_ORIGIN || '*',
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         credentials: true,
     });
-    
+
+    //* Máximo tiempo de espera para las peticiones (útil para la carga masiva de Excel)
+    app.use((req, res, next) => {
+        res.setTimeout(60000); // 60 segundos
+        next();
+    });
+
     app.useGlobalPipes(
         new ValidationPipe({
             //* Evitamos campos que no necesitamos en cada peticion
             whitelist: true,
             forbidNonWhitelisted: true,
-            
+
             transform: true,
             transformOptions: {
                 //* Evitamos que nuestros campos tomen valores undefined si no los pasamos en dtos
@@ -45,7 +51,7 @@ async function bootstrap() {
             },
         })
     )
-    
+
     await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
