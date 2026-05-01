@@ -1,4 +1,4 @@
-import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, DeleteDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
 export class Digemid {
@@ -19,7 +19,6 @@ export class Digemid {
         name: 'nombre_producto'
     })
     nombreProducto: string;
-
 
     @Column('varchar', {
         length: 255,
@@ -78,6 +77,9 @@ export class Digemid {
         length: 255
     })
     situacion: string;
+
+    @DeleteDateColumn({name: 'deleted_at'})
+    deletedAt: Date;
 
     @CreateDateColumn({name: 'created_at'})
     createdAt: Date;

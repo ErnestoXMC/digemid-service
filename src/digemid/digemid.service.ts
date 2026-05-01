@@ -1,4 +1,4 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { UpdateDigemidDto } from './dto/update-digemid.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Digemid } from './entities/digemid.entity';
@@ -7,7 +7,7 @@ import * as xlsx from 'xlsx';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { FilterSimplePagination } from 'src/common/interfaces/filter.interface';
 import { DigemidResponseDto } from './dto/response/digemid-response.dto';
-import { toDtoList } from 'src/helpers/plan-to-dto.helper';
+import { toDto, toDtoList } from 'src/helpers/plan-to-dto.helper';
 
 @Injectable()
 export class DigemidService {
@@ -74,33 +74,88 @@ export class DigemidService {
         return toDtoList(DigemidResponseDto, digemidData);
     }
     
-    findOne(id: number) {
-        return `This action returns a #${id} digemid`;
+    async findOne(term: string): Promise<DigemidResponseDto> {
+        term = term.trim();
+
+        let digemid: Digemid | null = null;
+
+        if (!isNaN(Number(term))) {
+            digemid = await this.digemidRepository.findOne({
+                where: [{ id: Number(term) }, { codigoProducto: term }],
+            });
+        } else {
+            digemid = await this.digemidRepository.findOneBy({ codigoProducto: term });
+        }
+
+        if (!digemid)
+            throw new NotFoundException('No se encontró el producto Digemid.');
+
+        return toDto(DigemidResponseDto, digemid);
     }
-    
-    update(id: number, updateDigemidDto: UpdateDigemidDto) {
-        return `This action updates a #${id} digemid`;
+
+    async update(id: number, updateDigemidDto: UpdateDigemidDto): Promise<DigemidResponseDto> {
+        try {
+            const { codigoProducto, ...updateProperties } = updateDigemidDto;
+
+            const digemid = await this.digemidRepository.findOneBy({ id });
+
+            if (!digemid) throw new NotFoundException('Producto Digemid no encontrado.');
+
+            if (codigoProducto) {
+                const existing = await this.digemidRepository.findOneBy({ codigoProducto });
+
+                if (existing && existing.id !== id)
+                    throw new BadRequestException(`El código de producto '${codigoProducto}' ya está en uso.`);
+
+                digemid.codigoProducto = codigoProducto;
+            }
+
+            Object.assign(digemid, updateProperties);
+
+            const saved = await this.digemidRepository.save(digemid);
+
+            return toDto(DigemidResponseDto, saved);
+
+        } catch (error: any) {
+            if (error instanceof NotFoundException) throw error;
+            if (error instanceof BadRequestException) throw error;
+
+            this.logger.error(error);
+            throw new InternalServerErrorException('Error al actualizar el producto Digemid.');
+        }
     }
-    
-    remove(id: number) {
-        return `This action removes a #${id} digemid`;
+
+    async remove(id: number): Promise<void> {
+        try {
+            const digemid = await this.digemidRepository.findOneBy({ id });
+
+            if (!digemid) throw new NotFoundException('No se encontró el producto Digemid.');
+
+            await this.digemidRepository.softRemove(digemid);
+
+        } catch (error) {
+            if (error instanceof NotFoundException) throw error;
+
+            this.logger.error(error);
+            throw new InternalServerErrorException('Error al eliminar el producto Digemid.');
+        }
     }
-    // Mapea una fila del Excel a la entidad Digemid
-    // IMPORTANTE: los strings entre comillas deben coincidir con las cabeceras exactas del Excel
+    //* Mapea una fila del Excel a la entidad Digemid
+    //! IMPORTANTE: los strings entre comillas deben coincidir con las cabeceras exactas del Excel
     private mapRowToEntity(row: any): Digemid {
         const entity = new Digemid();
-        entity.codigoProducto          = String(row['Cod_Prod']           ?? '');
-        entity.nombreProducto          = String(row['Nom_Prod']            ?? '');
-        entity.concentracion           = String(row['Concent']              ?? '');
-        entity.formaFarmaceutica       = String(row['Nom_Form_Farm']         ?? '');
-        entity.presentacion            = String(row['Presentac']               ?? '');
-        entity.fraccion                = String(row['Fracción']                   ?? '');
-        entity.numeroRegistroSanitario = String(row['Num_RegSan']  ?? '');
-        entity.nombreTitular           = String(row['Nom_Titular']             ?? '');
-        entity.nombreFabricante        = String(row['Nom_Fabricante']          ?? '');
-        entity.nombreIFA               = String(row['Nom_IFA']                 ?? '');
-        entity.nombreRubro             = String(row['Nom_Rubro']               ?? '');
-        entity.situacion               = String(row['Situación']                  ?? '');
+        entity.codigoProducto = String(row['Cod_Prod'] ?? '');
+        entity.nombreProducto = String(row['Nom_Prod'] ?? '');
+        entity.concentracion = String(row['Concent'] ?? '');
+        entity.formaFarmaceutica = String(row['Nom_Form_Farm'] ?? '');
+        entity.presentacion = String(row['Presentac'] ?? '');
+        entity.fraccion = String(row['Fracción'] ?? '');
+        entity.numeroRegistroSanitario = String(row['Num_RegSan'] ?? '');
+        entity.nombreTitular = String(row['Nom_Titular'] ?? '');
+        entity.nombreFabricante = String(row['Nom_Fabricante'] ?? '');
+        entity.nombreIFA = String(row['Nom_IFA'] ?? '');
+        entity.nombreRubro = String(row['Nom_Rubro'] ?? '');
+        entity.situacion = String(row['Situación'] ?? '');
         return entity;
     }
 }

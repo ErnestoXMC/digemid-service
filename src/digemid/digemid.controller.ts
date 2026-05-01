@@ -34,9 +34,9 @@ export class DigemidController {
         return this.digemidService.findAll(paginationDto);
     }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.digemidService.findOne(+id);
+    @Get(':term')
+    findOne(@Param('term') term: string) {
+        return this.digemidService.findOne(term);
     }
 
     @Patch(':id')
